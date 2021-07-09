@@ -1,0 +1,131 @@
+<html>
+<head>
+<script src="static/js/jquery-1.11.3.min.js"></script>
+<script src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script src="static/js/gmaps.js"></script>
+
+<link rel="icon" type="image/png" href="static/img/fmf_ico.png" />
+
+
+</head>
+    
+<body>
+<img src='static/img/fmf_logo.png'/>
+<h1>Find My Friends Web!</h1>
+<script>
+var welcomeMsg = 'Fill in the blanks above to locate your friends.';
+$( document ).ready(function() {
+    $('#result').text(welcomeMsg);
+});
+
+</script>
+<form id='user_val' method='POST' action='/'>
+<table border='1'>
+<tr>
+<td>PRS_ID</td><td><input id='prsID' name='prsID'size=43 value=''/>
+</tr><tr>
+<td>Auth Token</td><td><input id='mmeFMFAuthToken' name='mmeFMFAuthToken' size=43 value=''/>
+</tr>
+</table>
+<input id='locate_button' type='button' name='submit_button' value='Locate'/>
+<input id='reset_button' type='button' name='reset_button' value='Reset'/>
+<br/>
+</form>
+<script>
+    // Reset Functionality
+    $('#reset_button').click(function(ev){
+        $('#user_val').trigger("reset");
+        $('#result').text(welcomeMsg);
+    });
+    
+    // Locate Functionality
+    $('#locate_button').click(function(ev){
+        
+        var prsID = $('#prsID').val();
+        var mmeFMFAuthToken = $('#mmeFMFAuthToken').val();
+
+        // Construct Request Body.
+        var body = {
+            'prsID':prsID,
+            'mmeFMFAuthToken':mmeFMFAuthToken
+        }
+    
+        // Get Data from Apple.
+        $.ajax({
+            type:'POST',
+            dataType   : 'json',
+            url:'/',
+            contentType: 'application/json; charset=UTF-8',
+            data:JSON.stringify(body),
+            success: function(data){
+                // Create new Output.
+                //console.log(data);
+                entryKeys = Object.keys(data);
+                
+                var outData = "<hr/>";
+                outData+="<table border='1'>"
+                for(var i=0;i<entryKeys.length;i++){
+                    
+                    currentEntry = data[entryKeys[i]];
+                    
+                    
+                    //Status.
+                    outData+="<tr><td>";
+                    outData+=currentEntry['name']+":"+currentEntry['status']+"<br/>"
+                    outData+=currentEntry['address']+"<br/>";
+                    outData+=currentEntry['timeStamp']+" Seconds Ago."+"<br/>";                         
+                    
+                    // GPS Data
+                    outData+="<div id='map"+i+"'></div><br/>";
+             
+                    
+
+                    
+                    outData+="</td>";
+                    outData+="</tr>";
+                    
+                }
+                
+                outData+="</table>";
+                
+                $('#result').html(outData);
+                // Set up the maps.
+                for(var i=0; i < entryKeys.length;i++){
+                    //Set up the maps.
+                    currentEntry = data[entryKeys[i]];
+                    var did = "#"+$(document.getElementById("map"+i)).attr('id');
+                    if(currentEntry['latitude'] == 0 || currentEntry['longitude'] == 0){
+                        $(did).html("<img src='static/img/unavailable.png' width='196' height='196'/>")
+                        continue;
+                    }
+                    
+                    
+                   
+                    
+                var map = new GMaps({
+                    el: did,
+                    lat: currentEntry['latitude'],
+                    lng: currentEntry['longitude'],
+                    width: 192,
+                    height:192
+                    });
+                map.addMarker({
+                    lat: currentEntry['latitude'],
+                    lng: currentEntry['longitude'],
+                    title: currentEntry['name'],
+                });
+                } 
+               
+            }
+        })
+    
+    });
+
+</script>
+
+<div id="result"/>
+
+
+
+</body>
+</html>
